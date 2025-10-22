@@ -1,128 +1,168 @@
 import * as utils from "./utils";
 import getNewElo from "./getNewElo";
 
+const ensureDifferentPlayers = (players, currentPlayer) => {
+  if (Object.keys(players).length <= 1) {
+    return currentPlayer;
+  }
+
+  let opponent = utils.randomKey(players);
+
+  while (opponent === currentPlayer) {
+    opponent = utils.randomKey(players);
+  }
+
+  return opponent;
+};
+
+const calculateOutcomeScores = (player1Score, player2Score) => {
+  if (player1Score < player2Score) {
+    return {
+      outcome: 1,
+      scores: [1, 0],
+    };
+  }
+
+  if (player1Score > player2Score) {
+    return {
+      outcome: -1,
+      scores: [0, 1],
+    };
+  }
+
+  return {
+    outcome: 0,
+    scores: [0.5, 0.5],
+  };
+};
+
+const updateOutcomeTallies = (player1, player2, outcome) => {
+  if (outcome === 1) {
+    player1.w += 1;
+    player2.l += 1;
+    return;
+  }
+
+  if (outcome === -1) {
+    player2.w += 1;
+    player1.l += 1;
+    return;
+  }
+
+  player1.d += 1;
+  player2.d += 1;
+};
+
+const updateEloForMatch = (
+  player1,
+  player2,
+  scores,
+  kFactor,
+  gravity,
+  energy,
+  baseline,
+  secondHalf,
+) => {
+  const [newPlayer1Elo, newPlayer2Elo] = getNewElo(
+    {
+      elo: player1.elo,
+      score: scores[0],
+    },
+    {
+      elo: player2.elo,
+      score: scores[1],
+    },
+    kFactor,
+    gravity,
+    energy,
+    baseline,
+  );
+
+  player1.elo = newPlayer1Elo;
+  player2.elo = newPlayer2Elo;
+
+  player1.totalElo += newPlayer1Elo;
+  player2.totalElo += newPlayer2Elo;
+
+  if (secondHalf) {
+    player1.totalSecondHalfElo += newPlayer1Elo;
+    player2.totalSecondHalfElo += newPlayer2Elo;
+  }
+};
+
 const fight = (indexData, coeficients) => {
-	const { kFactor, gravity, energy, baseline, fights } = coeficients;
+  const { kFactor, gravity, energy, baseline, fights } = coeficients;
 
-	const eloData = utils.makeEloDataFromIndexData(indexData, baseline);
+  const eloData = utils.makeEloDataFromIndexData(indexData, baseline);
+  let secondHalf = false;
 
-	let secondHalf = false;
+  for (let i = 0; i < fights; i++) {
+    secondHalf = secondHalf || i >= fights / 2;
 
-	for (let i = 0; i < fights; i++) {
-		secondHalf = secondHalf || i > fights / 2;
+    const player1Name = utils.randomKey(eloData);
+    const player2Name = ensureDifferentPlayers(eloData, player1Name);
+    const player1Indexes = indexData[player1Name];
 
-		const player1 = utils.randomKey(eloData);
-		const player2 = utils.randomKey(eloData);
-		const indexName = utils.randomKey(indexData[player1]);
+    if (!player1Indexes) {
+      continue;
+    }
 
-		const player1score = indexData[player1][indexName];
-		const player2score = indexData[player2][indexName];
+    let indexName;
 
-		eloData[player1].attemptedGames++;
-		eloData[player2].attemptedGames++;
+    try {
+      indexName = utils.randomKey(player1Indexes);
+    } catch (error) {
+      continue;
+    }
 
-		if (player1score && player2score) {
-			eloData[player1].games++;
-			eloData[player2].games++;
+    if (player1Name === player2Name) {
+      continue;
+    }
 
-			if (secondHalf) {
-				eloData[player1].secondHalfGames++;
-				eloData[player2].secondHalfGames++;
-			}
+    const player2Indexes = indexData[player2Name];
 
-			if (player1score < player2score) {
-				// player1 wins
-				eloData[player1].w++;
-				eloData[player2].l++;
+    if (!player2Indexes || !(indexName in player2Indexes)) {
+      continue;
+    }
 
-				const [newPlayer1Elo, newPlayer2Elo] = getNewElo(
-					{
-						elo: eloData[player1].elo,
-						score: 1
-					},
-					{
-						elo: eloData[player2].elo,
-						score: 0
-					},
-					kFactor,
-					gravity,
-					energy,
-					baseline
-				);
+    const player1Score = player1Indexes[indexName];
+    const player2Score = player2Indexes[indexName];
 
-				eloData[player1].elo = newPlayer1Elo;
-				eloData[player2].elo = newPlayer2Elo;
+    const player1 = eloData[player1Name];
+    const player2 = eloData[player2Name];
 
-				eloData[player1].totalElo += newPlayer1Elo;
-				eloData[player2].totalElo += newPlayer2Elo;
+    player1.attemptedGames += 1;
+    player2.attemptedGames += 1;
 
-				if (secondHalf) {
-					eloData[player1].totalSecondHalfElo += newPlayer1Elo;
-					eloData[player2].totalSecondHalfElo += newPlayer2Elo;
-				}
-			} else if (player1score > player2score) {
-				// player2 wins
-				eloData[player2].w++;
-				eloData[player1].l++;
+    if (player1Score == null || player2Score == null) {
+      continue;
+    }
 
-				const [newPlayer1Elo, newPlayer2Elo] = getNewElo(
-					{
-						elo: eloData[player1].elo,
-						score: 0
-					},
-					{
-						elo: eloData[player2].elo,
-						score: 1
-					},
-					kFactor,
-					gravity,
-					energy,
-					baseline
-				);
+    player1.games += 1;
+    player2.games += 1;
 
-				eloData[player1].elo = newPlayer1Elo;
-				eloData[player2].elo = newPlayer2Elo;
-				eloData[player1].totalElo += newPlayer1Elo;
-				eloData[player2].totalElo += newPlayer2Elo;
+    if (secondHalf) {
+      player1.secondHalfGames += 1;
+      player2.secondHalfGames += 1;
+    }
 
-				if (secondHalf) {
-					eloData[player1].totalSecondHalfElo += newPlayer1Elo;
-					eloData[player2].totalSecondHalfElo += newPlayer2Elo;
-				}
-			} else {
-				// draw
-				eloData[player1].d++;
-				eloData[player2].d++;
+    const { outcome, scores } = calculateOutcomeScores(player1Score, player2Score);
 
-				const [newPlayer1Elo, newPlayer2Elo] = getNewElo(
-					{
-						elo: eloData[player1].elo,
-						score: 0.5
-					},
-					{
-						elo: eloData[player2].elo,
-						score: 0.5
-					},
-					kFactor,
-					gravity,
-					energy,
-					baseline
-				);
+    updateOutcomeTallies(player1, player2, outcome);
 
-				eloData[player1].elo = newPlayer1Elo;
-				eloData[player2].elo = newPlayer2Elo;
-				eloData[player1].totalElo += newPlayer1Elo;
-				eloData[player2].totalElo += newPlayer2Elo;
+    updateEloForMatch(
+      player1,
+      player2,
+      scores,
+      kFactor,
+      gravity,
+      energy,
+      baseline,
+      secondHalf,
+    );
+  }
 
-				if (secondHalf) {
-					eloData[player1].totalSecondHalfElo += newPlayer1Elo;
-					eloData[player2].totalSecondHalfElo += newPlayer2Elo;
-				}
-			}
-		}
-	}
-
-	return eloData;
+  return eloData;
 };
 
 export default fight;

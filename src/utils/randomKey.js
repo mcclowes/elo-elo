@@ -1,16 +1,21 @@
-const objKeysMap = new Map();
+const objKeysMap = new WeakMap();
+
+const getKeys = obj => {
+  if (!objKeysMap.has(obj)) {
+    objKeysMap.set(obj, Object.keys(obj));
+  }
+
+  return objKeysMap.get(obj);
+};
 
 const randomKey = obj => {
-	let keys = [];
+  const keys = getKeys(obj);
 
-	if (objKeysMap.has(obj)) {
-		keys = objKeysMap.get(obj);
-	} else {
-		keys = Object.keys(obj);
-		objKeysMap.set(obj, keys);
-	}
-	// const keys = Object.keys(obj);
-	return keys[Math.floor(keys.length * Math.random())];
+  if (!keys.length) {
+    throw new Error("Cannot select a random key from an empty object");
+  }
+
+  return keys[Math.floor(keys.length * Math.random())];
 };
 
 export default randomKey;
