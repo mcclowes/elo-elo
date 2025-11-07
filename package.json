@@ -2,9 +2,9 @@
   "name": "elo-elo",
   "version": "0.0.6",
   "description": "Elo rating functionality",
-  "main": "lib/index.js",
+  "main": "dist/index.js",
   "directories": {
-    "lib": "lib"
+    "dist": "dist"
   },
   "repository": {
     "type": "git",
@@ -14,7 +14,7 @@
     "elo"
   ],
   "files": [
-    "lib"
+    "dist"
   ],
   "author": "Max Clayton Clowes <contact@mcclowes.com>",
   "license": "ISC",
@@ -23,7 +23,7 @@
   },
   "homepage": "https://github.com/mcclowes/elo-elo#readme",
   "scripts": {
-    "build": "./node_modules/.bin/babel src --out-dir lib --ignore '**/*.spec.js'",
+    "build": "./node_modules/.bin/babel src --out-dir dist --ignore '**/*.spec.js'",
     "format": "prettier --write src/",
     "format:staged": "pretty-quick --staged --pattern ./src/**",
     "test": "jest",
