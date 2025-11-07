@@ -3,8 +3,8 @@ name: Publish Package
 on:
   workflow_dispatch:
   push:
-    tags:
-      - "v*.*.*"
+    branches:
+      - main
 
 jobs:
   publish:
@@ -16,24 +16,68 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for version bump
+        id: version_check
+        run: |
+          CURRENT_VERSION=$(jq -r '.version' package.json)
+
+          if git rev-parse HEAD^ >/dev/null 2>&1; then
+            PREVIOUS_PACKAGE_JSON=$(git show HEAD^:package.json 2>/dev/null || echo "")
+          else
+            PREVIOUS_PACKAGE_JSON=""
+          fi
+
+          if [ -n "$PREVIOUS_PACKAGE_JSON" ]; then
+            PREVIOUS_VERSION=$(echo "$PREVIOUS_PACKAGE_JSON" | jq -r '.version')
+          else
+            PREVIOUS_VERSION=""
+          fi
+
+          echo "current_version=$CURRENT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "previous_version=$PREVIOUS_VERSION" >> "$GITHUB_OUTPUT"
+
+          if [ -z "$PREVIOUS_VERSION" ] || [ "$CURRENT_VERSION" != "$PREVIOUS_VERSION" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: No version bump detected
+        if: steps.version_check.outputs.changed == 'false'
+        run: echo "No package.json version bump detected on this commit. Skipping publish."
 
       - name: Set up Node.js
+        if: steps.version_check.outputs.changed == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: "20"
           registry-url: "https://registry.npmjs.org"
 
+      - name: Authenticate with npm
+        if: steps.version_check.outputs.changed == 'true'
+        id: npm_auth
+        uses: npm/action@v1
+        with:
+          registry: "https://registry.npmjs.org"
+
       - name: Install dependencies
+        if: steps.version_check.outputs.changed == 'true'
         run: npm ci
 
       - name: Run tests
+        if: steps.version_check.outputs.changed == 'true'
         run: npm test
 
       - name: Build package
+        if: steps.version_check.outputs.changed == 'true'
         run: npm run build
 
       - name: Publish to npm
+        if: steps.version_check.outputs.changed == 'true'
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ steps.npm_auth.outputs.token }}
         run: npm publish --provenance --access public
 
