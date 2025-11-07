@@ -1,6 +1,6 @@
 {
   "name": "elo-elo",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Elo rating functionality",
   "main": "dist/index.js",
   "directories": {
