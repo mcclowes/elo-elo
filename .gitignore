@@ -103,6 +103,32 @@ dist
 # TernJS port file
 .tern-port
 
+# IDE and Editor directories
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
 
+# OS files
+Thumbs.db
+Desktop.ini
+
+# Additional environment files
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# Lock files (optional - remove if you want to track them)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Build output
 lib/
 dist/
+
+# Claude Code
+.claude/
