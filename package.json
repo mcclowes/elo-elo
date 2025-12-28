@@ -28,12 +28,8 @@
     "format": "prettier --write src/",
     "format:staged": "pretty-quick --staged --pattern ./src/**",
     "test": "vitest run",
-    "test:watch": "vitest"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "npm run format:staged && npm run build"
-    }
+    "test:watch": "vitest",
+    "prepare": "husky"
   },
   "dependencies": {},
   "devDependencies": {
