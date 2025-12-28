@@ -1,4 +1,4 @@
-import getNewElo, { getExpectedScore } from "./getNewElo";
+import getNewElo, { getExpectedScore, EloValidationError } from "./getNewElo";
 
 describe("getExpectedScore", () => {
   it("returns 0.5 for equal ratings", () => {
@@ -155,5 +155,92 @@ describe("getNewElo", () => {
     );
 
     expect(highK_P1 - 1500).toBeGreaterThan(lowK_P1 - 1500);
+  });
+});
+
+describe("input validation", () => {
+  const validPlayer = { elo: 1500, score: 1 as const };
+  const validArgs = [validPlayer, { elo: 1500, score: 0 as const }, 32, 0, 400, 1500] as const;
+
+  describe("player validation", () => {
+    it("throws for invalid score values", () => {
+      expect(() =>
+        getNewElo({ elo: 1500, score: 0.3 as any }, validArgs[1], ...validArgs.slice(2) as any)
+      ).toThrow(EloValidationError);
+      expect(() =>
+        getNewElo({ elo: 1500, score: 0.3 as any }, validArgs[1], ...validArgs.slice(2) as any)
+      ).toThrow("score must be 0 (loss), 0.5 (draw), or 1 (win)");
+    });
+
+    it("throws for NaN elo", () => {
+      expect(() =>
+        getNewElo({ elo: NaN, score: 1 }, validArgs[1], ...validArgs.slice(2) as any)
+      ).toThrow("player1.elo must be a finite number");
+    });
+
+    it("throws for Infinity elo", () => {
+      expect(() =>
+        getNewElo({ elo: Infinity, score: 1 }, validArgs[1], ...validArgs.slice(2) as any)
+      ).toThrow("player1.elo must be a finite number");
+    });
+  });
+
+  describe("kFactor validation", () => {
+    it("throws for zero kFactor", () => {
+      expect(() =>
+        getNewElo(validArgs[0], validArgs[1], 0, 0, 400, 1500)
+      ).toThrow("kFactor must be a positive number");
+    });
+
+    it("throws for negative kFactor", () => {
+      expect(() =>
+        getNewElo(validArgs[0], validArgs[1], -10, 0, 400, 1500)
+      ).toThrow("kFactor must be a positive number");
+    });
+  });
+
+  describe("gravity validation", () => {
+    it("throws for gravity below 0", () => {
+      expect(() =>
+        getNewElo(validArgs[0], validArgs[1], 32, -0.1, 400, 1500)
+      ).toThrow("gravity must be between 0 and 1");
+    });
+
+    it("throws for gravity above 1", () => {
+      expect(() =>
+        getNewElo(validArgs[0], validArgs[1], 32, 1.5, 400, 1500)
+      ).toThrow("gravity must be between 0 and 1");
+    });
+
+    it("accepts gravity at boundaries", () => {
+      expect(() => getNewElo(validArgs[0], validArgs[1], 32, 0, 400, 1500)).not.toThrow();
+      expect(() => getNewElo(validArgs[0], validArgs[1], 32, 1, 400, 1500)).not.toThrow();
+    });
+  });
+
+  describe("energy validation", () => {
+    it("throws for zero energy", () => {
+      expect(() =>
+        getNewElo(validArgs[0], validArgs[1], 32, 0, 0, 1500)
+      ).toThrow("energy must be a positive number");
+    });
+
+    it("throws for negative energy", () => {
+      expect(() =>
+        getNewElo(validArgs[0], validArgs[1], 32, 0, -400, 1500)
+      ).toThrow("energy must be a positive number");
+    });
+  });
+
+  describe("baseline validation", () => {
+    it("throws for NaN baseline", () => {
+      expect(() =>
+        getNewElo(validArgs[0], validArgs[1], 32, 0, 400, NaN)
+      ).toThrow("baseline must be a finite number");
+    });
+
+    it("accepts negative baseline", () => {
+      expect(() => getNewElo(validArgs[0], validArgs[1], 32, 0, 400, -100)).not.toThrow();
+    });
   });
 });

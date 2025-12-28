@@ -2,6 +2,7 @@ import type { IndexData, EloData, Coefficients, SimulationProgress } from "./typ
 import fight from "./fight";
 
 export type { IndexData, EloData, Coefficients, EloStats, Player, SimulationProgress } from "./types";
+export { EloValidationError, getExpectedScore } from "./getNewElo";
 
 export default function* simulation(
   indexData: IndexData,

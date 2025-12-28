@@ -1,7 +1,7 @@
 # TODO
 
 ## High Priority
-- [ ] [HIGH] Add input validation to getNewElo function
+- [x] [HIGH] Add input validation to getNewElo function
 - [ ] [HIGH] Document the public API in README
 
 ## Medium Priority
