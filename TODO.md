@@ -2,7 +2,7 @@
 
 ## High Priority
 - [x] [HIGH] Add input validation to getNewElo function
-- [ ] [HIGH] Document the public API in README
+- [x] [HIGH] Document the public API in README
 
 ## Medium Priority
 - [ ] Add ESM build output alongside CommonJS
